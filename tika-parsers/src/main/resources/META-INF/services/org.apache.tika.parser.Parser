@@ -39,7 +39,10 @@ org.apache.tika.parser.microsoft.OfficeParser
 org.apache.tika.parser.microsoft.OldExcelParser
 org.apache.tika.parser.microsoft.TNEFParser
 org.apache.tika.parser.microsoft.ooxml.OOXMLParser
-org.apache.tika.parser.mp3.Mp3Parser
+# org.apache.tika.parser.mp3.Mp3Parser
+org.apache.tika.parser.mp3.TFMp3Parser
+# add swf
+org.apache.tika.parser.swf.SWFParser
 org.apache.tika.parser.mp4.MP4Parser
 org.apache.tika.parser.hdf.HDFParser
 org.apache.tika.parser.netcdf.NetCDFParser
