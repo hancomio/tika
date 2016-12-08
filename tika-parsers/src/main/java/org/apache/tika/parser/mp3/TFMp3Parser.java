@@ -31,7 +31,7 @@ import org.apache.tika.metadata.XMPDM;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AbstractParser;
 import org.apache.tika.parser.ParseContext;
-import org.apache.tika.parser.mp3.ID3Tags.ID3Comment;
+import org.apache.tika.parser.mp3.TFID3Tags.TFID3Comment;
 import org.apache.tika.sax.XHTMLContentHandler;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
@@ -68,11 +68,11 @@ public class TFMp3Parser extends AbstractParser {
         xhtml.startDocument();
 
         // Create handlers for the various kinds of ID3 tags
-        ID3TagsAndAudio audioAndTags = getAllTagHandlers(stream, handler);
+        TFID3TagsAndAudio audioAndTags = getAllTagHandlers(stream, handler);
 
         // Process tags metadata if the file has supported tags
         if (audioAndTags.tags.length > 0) {
-           CompositeTagHandler tag = new CompositeTagHandler(audioAndTags.tags);
+           TFCompositeTagHandler tag = new TFCompositeTagHandler(audioAndTags.tags);
 
            metadata.set(TikaCoreProperties.TITLE, tag.getTitle());
            metadata.set(TikaCoreProperties.CREATOR, tag.getArtist());
@@ -83,9 +83,10 @@ public class TFMp3Parser extends AbstractParser {
            metadata.set(XMPDM.COMPILATION, tag.getCompilation());
            metadata.set(XMPDM.RELEASE_DATE, tag.getYear());
            metadata.set(XMPDM.GENRE, tag.getGenre());
+           metadata.set(XMPDM.USLT, tag.getUslt());
 
            List<String> comments = new ArrayList<String>();
-           for (ID3Comment comment : tag.getComments()) {
+           for (TFID3Comment comment : tag.getComments()) {
               StringBuffer cmt = new StringBuffer();
               if (comment.getLanguage() != null) {
                  cmt.append(comment.getLanguage());
@@ -162,13 +163,13 @@ public class TFMp3Parser extends AbstractParser {
      * Scans the MP3 frames for ID3 tags, and creates ID3Tag Handlers
      *  for each supported set of tags. 
      */
-    protected static ID3TagsAndAudio getAllTagHandlers(InputStream stream, ContentHandler handler)
+    protected static TFID3TagsAndAudio getAllTagHandlers(InputStream stream, ContentHandler handler)
            throws IOException, SAXException, TikaException {
        TFID3v24Handler v24 = null;
        TFID3v23Handler v23 = null;
        TFID3v22Handler v22 = null;
-       ID3v1Handler v1 = null;
-       LyricsHandler lyrics = null;
+       TFID3v1Handler v1 = null;
+       TFLyricsHandler lyrics = null;
        AudioFrame firstAudio = null;
        
        TailStream tailStream = new TailStream(stream, 10240+128);
@@ -208,12 +209,12 @@ public class TFMp3Parser extends AbstractParser {
        // ID3v1 tags live at the end of the file
        // Lyrics live just before ID3v1, at the end of the file
        // Search for both (handlers seek to the end for us)
-       lyrics = new LyricsHandler(tailStream.getTail());
+       lyrics = new TFLyricsHandler(tailStream.getTail());
        v1 = lyrics.id3v1;
 
        // Go in order of preference
        // Currently, that's newest to oldest
-       List<ID3Tags> tags = new ArrayList<ID3Tags>();
+       List<TFID3Tags> tags = new ArrayList<TFID3Tags>();
 
        if(v24 != null && v24.getTagsPresent()) {
           tags.add(v24);
@@ -228,18 +229,18 @@ public class TFMp3Parser extends AbstractParser {
           tags.add(v1);
        }
        
-       ID3TagsAndAudio ret = new ID3TagsAndAudio();
+       TFID3TagsAndAudio ret = new TFID3TagsAndAudio();
        ret.audio = firstAudio;
        ret.lyrics = lyrics;
-       ret.tags = tags.toArray(new ID3Tags[tags.size()]);
+       ret.tags = tags.toArray(new TFID3Tags[tags.size()]);
        ret.duration = duration;
        return ret;
     }
 
-    protected static class ID3TagsAndAudio {
-        private ID3Tags[] tags;
+    protected static class TFID3TagsAndAudio {
+        private TFID3Tags[] tags;
         private AudioFrame audio;
-        private LyricsHandler lyrics;
+        private TFLyricsHandler lyrics;
         private float duration;
     }
 

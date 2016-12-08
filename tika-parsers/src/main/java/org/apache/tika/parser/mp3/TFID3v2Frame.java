@@ -23,9 +23,7 @@ import java.io.PushbackInputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
-import org.apache.tika.parser.mp3.ID3Tags.ID3Comment;
-import org.apache.tika.parser.txt.CharsetDetector;
-import org.apache.tika.parser.txt.CharsetMatch;
+import org.apache.tika.parser.mp3.TFID3Tags.TFID3Comment;
 
 /**
  * A frame of ID3v2 data, which is then passed to a handler to 
@@ -210,18 +208,81 @@ public class TFID3v2Frame implements MP3Frame {
           this.encoding = encoding;
        }
     }
-//    protected static final TextEncoding[] encodings = new TextEncoding[] {
-//        new TextEncoding("ISO-8859-1", false),
-//        new TextEncoding("UTF-16", true), // With BOM
-//        new TextEncoding("UTF-16BE", true), // Without BOM
-//        new TextEncoding("UTF-8", false)
-//    };
+    
+    /**
+     * 인코딩 문제로 v22, 23, 24는 다른 API를 이용.
+     * 일반적으론 인코딩 플래그가 있고 UTF16LE로 저장되나
+     * 간혹 인코딩 플래그가 0이며  MS949로 저장되어 있는 경우가 있음.
+     */
     protected static final TextEncoding[] encodings = new TextEncoding[] {
+    	new TextEncoding("MS949", false),
+        new TextEncoding("UTF-16", true), // With BOM
         new TextEncoding("ISO-8859-1", false),
+        new TextEncoding("UTF-16BE", true), // Without BOM
+    	new TextEncoding("UTF-8", false)
+    };
+    
+    protected static final TextEncoding[] encodings_uslt = new TextEncoding[] {
+        new TextEncoding("ISO-8859-1", false),
+        new TextEncoding("utf-16LE", true), // With BOM
         new TextEncoding("UTF-16", true), // With BOM
         new TextEncoding("UTF-16BE", true), // Without BOM
     	new TextEncoding("UTF-8", false)
     };
+    
+    /**
+     * for uslt.
+     */
+    protected static String getUSLTTagString(byte[] data, int offset, int length) {
+        int actualLength = length;
+        if (actualLength == 0) {
+            return "";
+        }
+        if (actualLength == 1 && data[offset] == 0) {
+            return "";
+        }
+        
+        TextEncoding encoding = encodings_uslt[0];
+        byte maybeEncodingFlag = data[offset];
+        if (maybeEncodingFlag >= 0 && maybeEncodingFlag < encodings_uslt.length) {
+            offset++;
+            actualLength--;
+            encoding = encodings_uslt[maybeEncodingFlag];
+        }
+        
+        // Trim off null termination / padding (as present) 
+        while (encoding.doubleByte && actualLength >= 2 && data[offset+actualLength-1] == 0 && data[offset+actualLength-2] == 0) {
+           actualLength -= 2;
+        } 
+        while (!encoding.doubleByte && actualLength >= 1 && data[offset+actualLength-1] == 0) {
+           actualLength--;
+        }
+        if (actualLength == 0) {
+           return "";
+        }
+
+        // TIKA-1024: If it's UTF-16 (with BOM) and all we
+        // have is a naked BOM then short-circuit here
+        // (return empty string), because new String(..)
+        // gives different results on different JVMs
+        if (encoding.encoding.equals("UTF-16") && actualLength == 2 &&
+            ((data[offset] == (byte) 0xff && data[offset+1] == (byte) 0xfe) ||
+             (data[offset] == (byte) 0xfe && data[offset+1] == (byte) 0xff))) {
+          return "";
+        }
+        
+        // 언어 태그 3byte skip
+        offset+=3;
+        actualLength-=3;
+
+        try {
+            // Build the base string
+            return new String(data, offset, actualLength, encoding.encoding);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(
+                    "Core encoding " + encoding.encoding + " is not available", e);
+        }
+    }
 
     /**
      * Returns the (possibly null padded) String at the given offset and
@@ -236,22 +297,15 @@ public class TFID3v2Frame implements MP3Frame {
             return "";
         }
         
-        CharsetDetector cd = new CharsetDetector();
-        cd.setText(data);
-//        CharsetMatch bestMatch = cd.detectForTxtFormat();
-        CharsetMatch bestMatch = cd.detect();
-
-//        TextEncoding encoding = new TextEncoding(bestMatch.getName(), false);
-        TextEncoding encoding = new TextEncoding("euc-jp", true);
-//        // Does it have an encoding flag?
-//        // Detect by the first byte being sub 0x20
-//        TextEncoding encoding = encodings[0];
-//        byte maybeEncodingFlag = data[offset];
-//        if (maybeEncodingFlag >= 0 && maybeEncodingFlag < encodings.length) {
-//            offset++;
-//            actualLength--;
-//            encoding = encodings[maybeEncodingFlag];
-//        }
+        // Does it have an encoding flag?
+        // Detect by the first byte being sub 0x20
+        TextEncoding encoding = encodings[0];
+        byte maybeEncodingFlag = data[offset];
+        if (maybeEncodingFlag >= 0 && maybeEncodingFlag < encodings.length) {
+            offset++;
+            actualLength--;
+            encoding = encodings[maybeEncodingFlag];
+        }
         
         // Trim off null termination / padding (as present) 
         while (encoding.doubleByte && actualLength >= 2 && data[offset+actualLength-1] == 0 && data[offset+actualLength-2] == 0) {
@@ -286,7 +340,7 @@ public class TFID3v2Frame implements MP3Frame {
      * Builds up the ID3 comment, by parsing and extracting
      *  the comment string parts from the given data. 
      */
-    protected static ID3Comment getComment(byte[] data, int offset, int length) {
+    protected static TFID3Comment getComment(byte[] data, int offset, int length) {
        // Comments must have an encoding
        int encodingFlag = data[offset];
        if (encodingFlag >= 0 && encodingFlag < encodings.length) {
@@ -335,7 +389,7 @@ public class TFID3v2Frame implements MP3Frame {
           }
           
           // Return
-          return new ID3Comment(lang, description, text);
+          return new TFID3Comment(lang, description, text);
        } catch (UnsupportedEncodingException e) {
           throw new RuntimeException(
                   "Core encoding " + encoding.encoding + " is not available", e);

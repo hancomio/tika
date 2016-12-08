@@ -32,7 +32,7 @@ import org.xml.sax.SAXException;
  * @see <a href="http://www.id3.org/id3v2.4.0-structure">MP3 ID3 Version 2.4 specification</a>
  * @see <a href="http://www.id3.org/id3v2.4.0-frames">MP3 ID3 Version 2.4 frames/tags</a>
  */
-public class TFID3v24Handler implements ID3Tags {
+public class TFID3v24Handler implements TFID3Tags {
     private String title;
     private String artist;
     private String album;
@@ -43,7 +43,8 @@ public class TFID3v24Handler implements ID3Tags {
     private String albumArtist;
     private String disc;
     private String compilation;
-    private List<ID3Comment> comments = new ArrayList<ID3Comment>();
+    private String uslt;
+    private List<TFID3Comment> comments = new ArrayList<TFID3Comment>();
 
     public TFID3v24Handler(TFID3v2Frame frame)
             throws IOException, SAXException, TikaException {
@@ -77,17 +78,18 @@ public class TFID3v24Handler implements ID3Tags {
             } else if (tag.name.equals("TCON")) {
                genre = TFID3v22Handler.extractGenre( getTagString(tag.data, 0, tag.data.length) );
             } else if (tag.name.equals("USLT")) {
-            	String lyrics= "";
-            	lyrics = getTagString(tag.data, 0, tag.data.length); 
-            	System.err.println(lyrics);
+            	uslt = getTagUSLTString(tag.data, 0, tag.data.length); 
             }
         }
     }
-
+    
+    private String getTagUSLTString(byte[] data, int offset, int length) {
+        return TFID3v2Frame.getUSLTTagString(data, offset, length);
+    }
     private String getTagString(byte[] data, int offset, int length) {
         return TFID3v2Frame.getTagString(data, offset, length);
     }
-    private ID3Comment getComment(byte[] data, int offset, int length) {
+    private TFID3Comment getComment(byte[] data, int offset, int length) {
         return TFID3v2Frame.getComment(data, offset, length);
     }
 
@@ -115,7 +117,7 @@ public class TFID3v24Handler implements ID3Tags {
         return composer;
     }
 
-    public List<ID3Comment> getComments() {
+    public List<TFID3Comment> getComments() {
         return comments;
     }
 
@@ -138,6 +140,10 @@ public class TFID3v24Handler implements ID3Tags {
     public String getCompilation() {
         return compilation;
     }
+    
+	public String getUslt() {
+		return uslt;
+	}
 
     private class RawV24TagIterator extends RawTagIterator {
         private RawV24TagIterator(TFID3v2Frame frame) {

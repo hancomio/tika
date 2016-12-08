@@ -422,5 +422,10 @@ public interface XMPDM {
      */
     Property VIDEO_PIXEL_ASPECT_RATIO =
         Property.internalRational("xmpDM:videoPixelAspectRatio");
+    
+    /**
+     * "The name of the uslt."
+     */
+    Property USLT = Property.externalText("xmpDM:uslt");
 
 }
