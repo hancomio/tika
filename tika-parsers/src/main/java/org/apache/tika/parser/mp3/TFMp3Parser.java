@@ -128,6 +128,9 @@ public class TFMp3Parser extends AbstractParser {
             for (String comment : comments) {
                xhtml.element("p", comment);
             }
+
+            // 2.2v, 2.3v, 2.4v lyrics
+            xhtml.element("p", tag.getUslt());
         }
         if (audioAndTags.duration > 0) {
             metadata.set(XMPDM.DURATION, audioAndTags.duration);

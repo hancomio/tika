@@ -49,7 +49,8 @@ org.apache.tika.parser.netcdf.NetCDFParser
 org.apache.tika.parser.odf.OpenDocumentParser
 org.apache.tika.parser.pdf.PDFParser
 org.apache.tika.parser.pkg.CompressorParser
-org.apache.tika.parser.pkg.PackageParser
+org.apache.tika.parser.pkg.TFPackageParser
+# org.apache.tika.parser.pkg.PackageParser
 org.apache.tika.parser.pkg.RarParser
 org.apache.tika.parser.rtf.RTFParser
 org.apache.tika.parser.txt.TXTParser
@@ -57,7 +58,8 @@ org.apache.tika.parser.video.FLVParser
 org.apache.tika.parser.xml.DcXMLParser
 org.apache.tika.parser.dif.DIFParser
 org.apache.tika.parser.xml.FictionBookParser
-org.apache.tika.parser.chm.ChmParser
+# org.apache.tika.parser.chm.ChmParser
+org.apache.tika.parser.chm.TFChmParser
 org.apache.tika.parser.code.SourceCodeParser
 org.apache.tika.parser.mat.MatParser
 org.apache.tika.parser.ocr.TesseractOCRParser
