@@ -52,6 +52,15 @@ public class AutoDetectReader extends BufferedReader {
             try {
                 Charset charset = detector.detect(input, metadata);
                 if (charset != null) {
+                	/**
+                	 * base64로 인코딩된 한글의 경우. charset문제로 한글이 제대로 디코딩되지 않는다.
+                	 * IBM866은 일본어(euc).eml, KOI8-R은 한국어(ecu).eml 샘플에서 확인. case by case로 추가해야 될듯.
+                	 * charset detector가 인코딩시 설정된 charset을 제대로 찾지 못하기 때문에 발생.
+                	 * CONV-1853.
+                	 */
+                	if(charset.name().equals("KOI8-R") || charset.name().equals("IBM866")){
+                		charset = Charset.forName("euc-kr");
+                	}
                     return charset;
                 }
             } catch (NoClassDefFoundError e) {

@@ -103,10 +103,6 @@ class MailContentHandler implements ContentHandler {
 
         Metadata submd = new Metadata();
         
-        // CONV-1853.
-        // TXTParser에서 인코딩 문제가 있다. 어차피 중복이므로 제거한다.
-        if(body.getMimeType().equals("text/plain")) return; 
-        
         submd.set(Metadata.CONTENT_TYPE, body.getMimeType());
         submd.set(Metadata.CONTENT_ENCODING, body.getCharset());
 
